@@ -333,69 +333,73 @@ elif choice == 'Thực Hiện Đề Xuất':
     if model_select == 'Content_Filtering':
         
         sample_products = pd.read_csv('sample_products_list.csv', index_col=0)
-        sample_products = sample_products.values.reshape(3,5)
-        sample_products_df = pd.DataFrame(sample_products)
+        sample_products_df = sample_products.values.reshape(3,5)
+        sample_products_df = pd.DataFrame(sample_products_df)
 
         st.write("""### 1. Đề xuất sản phẩm tương tự theo content_filtering""")
         st.write("""###### Chọn 1 trong 15 sản phẩm minh họa trong bảng danh mục Product_ID bên dưới:""")
         st.table(sample_products_df)
 
-        #Nhập chọn 1 product_id
-        product_id_input = st.text_input('Chọn một Product_ID trong bảng:')
+        #Nhập chọn 1 product_id, mã product_id mặc định là chọn mã đầu tiên trong bảng
+        product_id_input = st.text_input('Chọn một Product_ID trong bảng:', value=sample_products['product_id'][0])
+        
         algorithm_input = st.selectbox('Algorithm', options=['Gensim','Cosine_Similarity'])
         
         submit = st.button('Recommend')
+        if product_id_input=="":
+            st.write("##### Vui lòng nhập vào 1 mã sản phẩm ở trong bảng!""")
+        elif product_id_input is not None:
+            if submit:
+                
+                st.write("""##### Sản phẩm được chọn:""")
+                product_name = item(int(product_id_input))
+                sample_price = processed_product_df[processed_product_df.item_id == int(product_id_input)]['price'].values[0]
+                sample_price = 'Price: ' + str(sample_price) + ' VND'
 
-        if submit:
-            st.write("""##### Sản phẩm được chọn:""")
-            product_name = item(int(product_id_input))
-            sample_price = processed_product_df[processed_product_df.item_id == int(product_id_input)]['price'].values[0]
-            sample_price = 'Price: ' + str(sample_price) + ' VND'
+                image_site = 'gensim_rec_prod_img/' + str(product_id_input) +'.jpg'
 
-            image_site = 'gensim_rec_prod_img/' + str(product_id_input) +'.jpg'
+                st.text(product_name)
+                st.markdown(sample_price)
+                st.image(image_site)
+                st.write("""##### Đề xuất/gợi ý bên dưới:""")
 
-            st.text(product_name)
-            st.markdown(sample_price)
-            st.image(image_site)
-            st.write("""##### Đề xuất/gợi ý bên dưới:""")
-
-            if algorithm_input == 'Gensim':
-                view_product = processed_product_df[processed_product_df.item_id == int(product_id_input)].head(1)
-                name_description_wt = view_product['name_description_wt'].to_string(index=False)
-                results = gensim_recommender(name_description_wt, gensim_dictionary, gensim_tfidf, gensim_index)
-                results = results[results.item_id != int(product_id_input)]
-                results = results[['item_id','name','price']].reset_index()
-                results = results.drop('index',axis=1)
-                rec_prod_num = len(results)
-                for i in range(rec_prod_num):
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        image_link = 'gensim_rec_prod_img/' + str(results['item_id'][i]) +'.jpg'
-                        st.image(image_link)
-                    with col2:
-                        product_id = 'Product ID: ' + str(results['item_id'][i])
-                        prod_name = results['name'][i]
-                        product_price = 'Price: ' + str(results['price'][i]) + ' VND'
-                        st.subheader(product_id)
-                        st.markdown(prod_name)
-                        st.markdown(product_price)
+                if algorithm_input == 'Gensim':
+                    view_product = processed_product_df[processed_product_df.item_id == int(product_id_input)].head(1)
+                    name_description_wt = view_product['name_description_wt'].to_string(index=False)
+                    results = gensim_recommender(name_description_wt, gensim_dictionary, gensim_tfidf, gensim_index)
+                    results = results[results.item_id != int(product_id_input)]
+                    results = results[['item_id','name','price']].reset_index()
+                    results = results.drop('index',axis=1)
+                    rec_prod_num = len(results)
+                    for i in range(rec_prod_num):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            image_link = 'gensim_rec_prod_img/' + str(results['item_id'][i]) +'.jpg'
+                            st.image(image_link)
+                        with col2:
+                            product_id = 'Product ID: ' + str(results['item_id'][i])
+                            prod_name = results['name'][i]
+                            product_price = 'Price: ' + str(results['price'][i]) + ' VND'
+                            st.subheader(product_id)
+                            st.markdown(prod_name)
+                            st.markdown(product_price)
 
 
-            else:
-                sim_products = cosine_recommender(int(product_id_input), 5)
-                rec_prod_num = len(sim_products)
-                for i in range(rec_prod_num):
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        image_link = 'cosine_rec_prod_img/' + str(sim_products['item_id'][i]) +'.jpg'
-                        st.image(image_link)
-                    with col2:
-                        product_id = 'Product ID: ' + str(sim_products['item_id'][i])
-                        prod_name = sim_products['product_name'][i]
-                        product_price = 'Price: ' + str(sim_products['price'][i]) + ' VND'
-                        st.subheader(product_id)
-                        st.markdown(prod_name)
-                        st.markdown(product_price)
+                else:
+                    sim_products = cosine_recommender(int(product_id_input), 5)
+                    rec_prod_num = len(sim_products)
+                    for i in range(rec_prod_num):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            image_link = 'cosine_rec_prod_img/' + str(sim_products['item_id'][i]) +'.jpg'
+                            st.image(image_link)
+                        with col2:
+                            product_id = 'Product ID: ' + str(sim_products['item_id'][i])
+                            prod_name = sim_products['product_name'][i]
+                            product_price = 'Price: ' + str(sim_products['price'][i]) + ' VND'
+                            st.subheader(product_id)
+                            st.markdown(prod_name)
+                            st.markdown(product_price)
 
 
     elif model_select == 'Collaborative_Filtering':
@@ -416,35 +420,38 @@ elif choice == 'Thực Hiện Đề Xuất':
         st.write("""###### Chọn 1 trong 40 khách hàng minh họa trong bảng danh mục Customer_ID bên dưới:""")
         st.dataframe(sample_customers_df)
 
-        #Nhập chọn 1 customer_id trong bảng    
-        customer_id_input = st.text_input('Chọn một Customer_ID trong bảng:')
+        #Nhập chọn 1 customer_id trong bảng, mặc định lấy giá trị đầu tiên trong bảng
+        customer_id_input = st.text_input('Chọn một Customer_ID trong bảng:', value=sample_customers_df.iloc[0][0])
         algorithm_input = st.selectbox('Algorithm', options=['ALS'])
         
         submit = st.button('Recommend')
 
-        if submit:
-                customer_id = int(customer_id_input)
-                st.write("""##### Các sản phẩm đề xuất/gợi ý bên dưới:""")
+        if customer_id_input=="":
+            st.write("##### Vui lòng nhập vào 1 mã khách hàng ở trong bảng!""")
+        elif customer_id_input is not None:
+            if submit:
+                    customer_id = int(customer_id_input)
+                    st.write("""##### Các sản phẩm đề xuất/gợi ý bên dưới:""")
 
-                if algorithm_input == 'ALS':
-                    result = ALS_recommender_model[ALS_recommender_model['customer_id']==customer_id].reset_index()
-                    result = result.drop('index',axis=1)
-                    result = result[['product_id','rating']].head(5)
- 
-                    rec_prod_num = len(result)
-                    for i in range(rec_prod_num):
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            image_link = 'ALS_rec_prod_img/' + str(result['product_id'][i]) +'.jpg'
-                            st.image(image_link)
-                        with col2:
-                            product_id = 'Product ID: ' + str(result['product_id'][i])
-                            prod_name = item(result['product_id'][i])
-                            product_price = processed_product_df[processed_product_df.item_id == result['product_id'][i]]['price'].values[0]
-                            product_price = 'Price: ' + str(product_price) + ' VND'
-                            st.subheader(product_id)
-                            st.markdown(prod_name)
-                            st.markdown(product_price)
+                    if algorithm_input == 'ALS':
+                        result = ALS_recommender_model[ALS_recommender_model['customer_id']==customer_id].reset_index()
+                        result = result.drop('index',axis=1)
+                        result = result[['product_id','rating']].head(5)
+    
+                        rec_prod_num = len(result)
+                        for i in range(rec_prod_num):
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                image_link = 'ALS_rec_prod_img/' + str(result['product_id'][i]) +'.jpg'
+                                st.image(image_link)
+                            with col2:
+                                product_id = 'Product ID: ' + str(result['product_id'][i])
+                                prod_name = item(result['product_id'][i])
+                                product_price = processed_product_df[processed_product_df.item_id == result['product_id'][i]]['price'].values[0]
+                                product_price = 'Price: ' + str(product_price) + ' VND'
+                                st.subheader(product_id)
+                                st.markdown(prod_name)
+                                st.markdown(product_price)
              
 
 
